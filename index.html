@@ -1594,9 +1594,11 @@ const firebaseConfig = {
   messagingSenderId: "113375521463",
   appId: "1:113375521463:web:59d7db2e420f230ee03b32"
 };
+
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
 const db=getFirestore(app);
+
 
 // EXPOSE TO WINDOW FOR THE FEEDBACK API 
 window.db = db;
@@ -1796,4 +1798,5 @@ onAuthStateChanged(auth, async (user) => {
 
 </body>
 </html>
+
 
