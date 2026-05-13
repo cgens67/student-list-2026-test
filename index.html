@@ -1586,7 +1586,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/fireba
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-const firebaseConfig={apiKey:"AIzaSyBz0OfcaW50Ug7omcs-U_WSIo0BjdVKZdI",authDomain:"studentlist2026.firebaseapp.com",projectId:"studentlist2026",storageBucket:"studentlist2026.firebasestorage.app",messagingSenderId:"867205730183",appId:"1:867205730183:web:534666800bc7b2513fcd22"};
+const firebaseConfig = {
+  apiKey: "AIzaSyA8PpPc224X_49L2QC6f65g2v-3btCsNkQ",
+  authDomain: "studentlist2026test.firebaseapp.com",
+  projectId: "studentlist2026test",
+  storageBucket: "studentlist2026test.firebasestorage.app",
+  messagingSenderId: "113375521463",
+  appId: "1:113375521463:web:59d7db2e420f230ee03b32"
+};
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
 const db=getFirestore(app);
