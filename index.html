@@ -1740,6 +1740,485 @@ window.closeUpdateScreen = function() {
 };
 
 if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",initApp)}else{initApp()}
+
+// ==========================================
+// GENERIC CUSTOM DROPDOWN LOGIC
+// ==========================================
+window.toggleCustomSelect = (dropdownId) => {
+  document.querySelectorAll('.custom-select-dropdown').forEach(d => { 
+    if(d.id !== dropdownId) {
+      d.classList.remove('show'); 
+      d.parentElement.classList.remove('active-select');
+    }
+  });
+  const drop = document.getElementById(dropdownId);
+  drop.classList.toggle('show');
+  drop.parentElement.classList.toggle('active-select', drop.classList.contains('show'));
+  
+  document.querySelectorAll('.custom-select-container').forEach(c => c.style.zIndex = '1');
+  if(drop.classList.contains('show')) drop.parentElement.style.zIndex = '100';
+};
+
+window.selectOption = (dropdownId, value, text, headerId, callbackName = null) => {
+  document.getElementById(headerId).innerHTML = `<span>${text}</span><span class="material-icons-round">expand_more</span>`;
+  const drop = document.getElementById(dropdownId);
+  drop.classList.remove('show');
+  drop.parentElement.classList.remove('active-select');
+  drop.parentElement.style.zIndex = '1';
+  drop.setAttribute('data-value', value);
+  if(callbackName && window[callbackName]) window[callbackName](value);
+};
+
+window.selectIconOption = (dropdownId, iconValue, iconLabel, headerId) => {
+  document.getElementById(headerId).innerHTML = `<span><span class="material-icons-round" style="font-size:14px; vertical-align:middle;">${iconValue}</span> ${iconLabel}</span><span class="material-icons-round">expand_more</span>`;
+  const drop = document.getElementById(dropdownId);
+  drop.classList.remove('show');
+  drop.parentElement.classList.remove('active-select');
+  drop.parentElement.style.zIndex = '1';
+  drop.setAttribute('data-value', iconValue);
+};
+
+// ==========================================
+// ADMIN DASHBOARD LOGIC
+// ==========================================
+window.adminTempStudents =[];
+window.adminTempTeachers = {};
+window.adminTempNotices = {};
+window.adminSelectedStudentId = "NEW";
+
+window.openAdminPanel = () => {
+  window.adminTempStudents = JSON.parse(JSON.stringify(window.smkData));
+  window.adminTempTeachers = JSON.parse(JSON.stringify(window.teacherData));
+  window.adminTempNotices = JSON.parse(JSON.stringify(window.classNotices || {}));
+  
+  const t = window.globalSettings.theme || 'dynamic';
+  document.getElementById('adminThemeDropdown').setAttribute('data-value', t);
+  const themeOpts = {'dynamic':uiText[curLang].optThemeDyn,'morning':uiText[curLang].optThemeMorn,'afternoon':uiText[curLang].optThemeAft,'night':uiText[curLang].optThemeNight,'christmas':uiText[curLang].optThemeXmas,'newfilter':uiText[curLang].optThemeBeta1,'beta':uiText[curLang].optThemeBeta2};
+  document.getElementById('adminThemeHeader').innerHTML = `<span>${themeOpts[t]||'Dynamic'}</span><span class="material-icons-round">expand_more</span>`;
+  
+  const maint = (window.globalSettings.maintenance === 'true') ? 'true' : 'false';
+  document.getElementById('adminMaintDropdown').setAttribute('data-value', maint);document.getElementById('adminMaintHeader').innerHTML = `<span>${maint==='true'?uiText[curLang].optMaintYes:uiText[curLang].optMaintNo}</span><span class="material-icons-round">expand_more</span>`;
+  
+  const glass = (window.globalSettings.disableGlass === 'true') ? 'true' : 'false';
+  document.getElementById('adminGlassDropdown').setAttribute('data-value', glass);
+  document.getElementById('adminGlassHeader').innerHTML = `<span>${glass==='true'?uiText[curLang].optGlassYes:uiText[curLang].optGlassNo}</span><span class="material-icons-round">expand_more</span>`;
+  
+  const hideTh = (window.globalSettings.hideTheme === 'true') ? 'true' : 'false';
+  document.getElementById('adminHideThemeDropdown').setAttribute('data-value', hideTh);
+  document.getElementById('adminHideThemeHeader').innerHTML = `<span>${hideTh==='true'?uiText[curLang].optUpdateYes:uiText[curLang].optUpdateNo}</span><span class="material-icons-round">expand_more</span>`;
+
+  const hideSt = (window.globalSettings.hideStats === 'true') ? 'true' : 'false';
+  document.getElementById('adminHideStatsDropdown').setAttribute('data-value', hideSt);
+  document.getElementById('adminHideStatsHeader').innerHTML = `<span>${hideSt==='true'?uiText[curLang].optUpdateYes:uiText[curLang].optUpdateNo}</span><span class="material-icons-round">expand_more</span>`;
+
+  const abt = window.globalSettings.aboutData || {};
+  document.getElementById('adminAboutTitle').value = abt.title || "Student Allocation List 2026";
+  document.getElementById('adminAboutVersion').value = abt.version || "Version 6.0 (Secured Edition)";
+  document.getElementById('adminAboutDesc').value = abt.desc || "Check allocations, view origin maps, and use Quick Actions (Long Press).";
+  document.getElementById('adminAboutFooter').value = abt.footer || "Hosted on Vercel | Secured by Firebase";
+
+  const gFont = (window.globalSettings.goofyFont === 'true') ? 'true' : 'false';
+  document.getElementById('adminGoofyFontDropdown').setAttribute('data-value', gFont);
+  document.getElementById('adminGoofyFontHeader').innerHTML = `<span>${gFont==='true'?'Yes (Comic Sans)':'No'}</span><span class="material-icons-round">expand_more</span>`;
+
+  const faqData = window.globalSettings.faqData || {};
+  document.getElementById('adminFaqQ1').value = faqData.q1 || "";
+  document.getElementById('adminFaqA1').value = faqData.a1 || "";
+
+  const upd = window.globalSettings.updateScreen || { enabled: 'false', timestamp: Date.now(), iconAdded: 'new_releases', iconRemoved: 'build_circle', changelogAdded: '', changelogRemoved: '' };
+  const uEnabled = upd.enabled === 'true' ? 'true' : 'false';
+  document.getElementById('adminUpdateScreenDropdown').setAttribute('data-value', uEnabled);
+  document.getElementById('adminUpdateScreenHeader').innerHTML = `<span>${uEnabled==='true'?uiText[curLang].optUpdateYes:uiText[curLang].optUpdateNo}</span><span class="material-icons-round">expand_more</span>`;
+  
+  const iconNames = { 'new_releases': 'Sparkles', 'rocket_launch': 'Rocket', 'campaign': 'Alert', 'celebration': 'Party', 'build_circle': 'Tool', 'bug_report': 'Bug', 'star': 'Star', 'favorite': 'Heart', 'info': 'Info', 'check_circle': 'Check' };
+  const i1 = upd.iconAdded || 'new_releases';
+  const i2 = upd.iconRemoved || 'build_circle';
+  document.getElementById('adminIcon1Dropdown').setAttribute('data-value', i1);
+  document.getElementById('adminIcon1Header').innerHTML = `<span><span class="material-icons-round" style="font-size:14px; vertical-align:middle;">${i1}</span> ${iconNames[i1]||i1}</span><span class="material-icons-round">expand_more</span>`;
+  document.getElementById('adminIcon2Dropdown').setAttribute('data-value', i2);
+  document.getElementById('adminIcon2Header').innerHTML = `<span><span class="material-icons-round" style="font-size:14px; vertical-align:middle;">${i2}</span> ${iconNames[i2]||i2}</span><span class="material-icons-round">expand_more</span>`;
+  
+  document.getElementById('adminUpdateAdded').value = upd.changelogAdded || upd.changelog || '';
+  document.getElementById('adminUpdateRemoved').value = upd.changelogRemoved || '';
+
+  window.refreshAdminStudentDropdown("NEW");
+  window.loadAdminTeacherForm();
+  window.switchAdminTab('students');
+  document.getElementById('adminOverlay').classList.add('open');
+};
+
+window.closeAdminPanel = () => { 
+  document.getElementById('adminOverlay').classList.remove('open'); 
+  document.querySelectorAll('.custom-select-dropdown').forEach(d => { d.classList.remove('show'); d.parentElement.classList.remove('active-select'); });
+  document.querySelectorAll('.custom-select-container').forEach(c => c.style.zIndex = '1');
+};
+
+window.switchAdminTab = (tab) => {['students', 'teachers', 'settings'].forEach(t => {
+    document.getElementById('adminTab-' + t).style.display = (t === tab) ? 'block' : 'none';
+    document.getElementById('tabBtn-' + t).classList.toggle('active', t === tab);
+  });
+};
+
+window.toggleStudentDropdown = () => {
+  document.querySelectorAll('.custom-select-dropdown').forEach(d => { 
+    if(d.id !== 'adminStudentDropdown') { d.classList.remove('show'); d.parentElement.classList.remove('active-select'); }
+  });
+  document.querySelectorAll('.custom-select-container').forEach(c => c.style.zIndex = '1');
+  const drop = document.getElementById('adminStudentDropdown');
+  drop.classList.toggle('show');
+  drop.parentElement.classList.toggle('active-select', drop.classList.contains('show'));
+  if(drop.classList.contains('show')) drop.parentElement.style.zIndex = '100';
+  document.getElementById('adminStudentSearch').value = '';
+  window.filterAdminStudents();
+  document.getElementById('adminStudentSearch').focus();
+};
+
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.custom-select-dropdown').forEach(drop => {
+    const header = drop.previousElementSibling;
+    if(drop.classList.contains('show') && !drop.contains(e.target) && !header.contains(e.target)){ 
+      drop.classList.remove('show'); 
+      drop.parentElement.classList.remove('active-select');
+      drop.parentElement.style.zIndex = '1';
+    }
+  });
+});
+
+window.filterAdminStudents = () => {
+  const query = document.getElementById('adminStudentSearch').value.toLowerCase();
+  document.querySelectorAll('.custom-option.student-opt').forEach(el => {
+    if(el.innerText.toLowerCase().includes(query)) el.style.display = 'block';
+    else el.style.display = 'none';
+  });
+};
+
+window.selectAdminStudent = (id, nameText, preventToggle = false) => {
+  window.adminSelectedStudentId = String(id);
+  document.getElementById('adminStudentSelectHeader').innerHTML = `<span>${nameText}</span><span class="material-icons-round">expand_more</span>`;
+  if(!preventToggle) {
+    const drop = document.getElementById('adminStudentDropdown');
+    drop.classList.remove('show');
+    drop.parentElement.classList.remove('active-select');
+    drop.parentElement.style.zIndex = '1';
+  }
+  window.loadAdminStudentForm();
+};
+
+window.refreshAdminStudentDropdown = (selectId = "NEW") => {
+  const list = document.getElementById('adminStudentList');
+  let html = `<div class="custom-option student-opt" onclick="window.selectAdminStudent('NEW', '<span class=\\'material-icons-round\\' style=\\'font-size:16px; vertical-align:text-bottom;\\'>person_add</span> Add New Student')"><strong><span class="material-icons-round" style="font-size:16px; vertical-align:text-bottom;">person_add</span> Add New Student</strong></div>`;
+  const sorted =[...window.adminTempStudents].sort((a,b)=>a.name.localeCompare(b.name));
+  sorted.forEach(s => { html += `<div class="custom-option student-opt" onclick="window.selectAdminStudent('${s.id}', '${s.name.replace(/'/g, "\\'")}')">${s.name} <span style="opacity:0.5;font-size:12px;">(${s.newClass})</span></div>`; });
+  list.innerHTML = html;
+
+  let selectedName = '<span class="material-icons-round" style="font-size:16px; vertical-align:text-bottom;">person_add</span> Add New Student';
+  if(selectId !== "NEW") {
+    const stu = window.adminTempStudents.find(s=>String(s.id)===String(selectId));
+    if(stu) selectedName = stu.name;
+  }
+  window.selectAdminStudent(selectId, selectedName, true);
+};
+
+window.loadAdminStudentForm = () => {
+  const id = window.adminSelectedStudentId;
+  if (id === "NEW") {
+    document.getElementById('adminStId').value = ''; 
+    document.getElementById('adminStName').value = ''; document.getElementById('adminStCn').value = '';
+    document.getElementById('adminStOld').value = ''; 
+    window.selectOption('adminClassDropdown', '2 BIRU', '2 BIRU', 'adminClassSelectHeader');
+    document.getElementById('adminStSch').value = '';
+  } else {
+    const student = window.adminTempStudents.find(s => String(s.id) === String(id));
+    if(student) {
+      document.getElementById('adminStId').value = student.id; 
+      document.getElementById('adminStName').value = student.name; document.getElementById('adminStCn').value = student.cn || "-";
+      document.getElementById('adminStOld').value = student.oldClass || "-"; 
+      window.selectOption('adminClassDropdown', student.newClass || '2 BIRU', student.newClass || '2 BIRU', 'adminClassSelectHeader');
+      document.getElementById('adminStSch').value = student.sch || "-";
+    }
+  }
+};
+
+window.adminApplyStudent = () => {
+  const oldId = String(window.adminSelectedStudentId);
+  const newId = document.getElementById('adminStId').value.trim();
+  const name = document.getElementById('adminStName').value.trim().toUpperCase();
+  if(!newId || !name) { if(window.showToast) window.showToast("ID and Name are required", "error_outline"); return; }
+  
+  if (oldId !== newId && window.adminTempStudents.some(s => String(s.id) === newId)) {
+    if(window.showToast) window.showToast("This ID already exists!", "error_outline"); return;
+  }
+
+  const existingIndex = window.adminTempStudents.findIndex(s => String(s.id) === oldId);
+  const newObj = { id: newId, name: name, cn: document.getElementById('adminStCn').value.trim() || "-", oldClass: document.getElementById('adminStOld').value.trim() || "-", newClass: document.getElementById('adminClassDropdown').getAttribute('data-value'), sch: document.getElementById('adminStSch').value.trim() || "-" };
+
+  if (existingIndex >= 0) { window.adminTempStudents[existingIndex] = newObj; if(window.showToast) window.showToast("Student Updated in Queue", "list_alt"); } 
+  else { window.adminTempStudents.push(newObj); if(window.showToast) window.showToast("New Student Added to Queue", "person_add"); }
+  
+  window.adminSelectedStudentId = newId;
+  window.refreshAdminStudentDropdown(newId);
+};
+
+window.adminDeleteStudent = () => {
+  const id = window.adminSelectedStudentId;
+  if (id === "NEW") return;
+  if(confirm("Delete this student?\n\nNot final until you click 'Save Database'.")) {
+    window.adminTempStudents = window.adminTempStudents.filter(s => String(s.id) !== String(id));
+    window.refreshAdminStudentDropdown("NEW");
+    if(window.showToast) window.showToast("Student Removed from Queue", "delete");
+  }
+};
+
+window.loadAdminTeacherForm = () => {
+  const cls = document.getElementById('adminTClassDropdown').getAttribute('data-value') || 'Biru';
+  const tData = window.adminTempTeachers[cls] || {g: "", p: ""};
+  const noticeData = window.adminTempNotices[cls] || "";
+  document.getElementById('adminTg').value = tData.g;
+  document.getElementById('adminTp').value = tData.p;
+  document.getElementById('adminClassNotice').value = noticeData;
+};
+
+window.adminApplyTeacher = () => {
+  const cls = document.getElementById('adminTClassDropdown').getAttribute('data-value') || 'Biru';
+  window.adminTempTeachers[cls] = { g: document.getElementById('adminTg').value.trim(), p: document.getElementById('adminTp').value.trim() };
+  window.adminTempNotices[cls] = document.getElementById('adminClassNotice').value.trim();
+  if(window.showToast) window.showToast("Class Updated in Queue", "school");
+};
+
+window.applyPendingUpdate = () => {
+  if(window.pendingDataUpdate) {
+    window.smkData = window.pendingDataUpdate.students;
+    window.teacherData = window.pendingDataUpdate.teachers;
+    window.classNotices = window.pendingDataUpdate.notices;
+    window.pendingDataUpdate = null;
+
+    if(window.initFilterChips) window.initFilterChips();
+    if(window.filterData) window.filterData();
+
+    document.getElementById('updatePromptBanner').classList.remove('show');
+    if(window.showToast) window.showToast("Data Updated Live", "check_circle");
+  }
+};
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA8PpPc224X_49L2QC6f65g2v-3btCsNkQ",
+  authDomain: "studentlist2026test.firebaseapp.com",
+  projectId: "studentlist2026test",
+  storageBucket: "studentlist2026test.firebasestorage.app",
+  messagingSenderId: "113375521463",
+  appId: "1:113375521463:web:59d7db2e420f230ee03b32"
+};
+
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+
+// EXPOSE TO WINDOW FOR THE FEEDBACK API 
+window.db = db;
+window.firestoreSetDoc = setDoc;
+window.firestoreDoc = doc;
+window.appSignOut = () => signOut(auth);
+
+const emailInput=document.getElementById('authEmail'),passwordInput=document.getElementById('authPassword'),primaryAuthBtn=document.getElementById('authSubmitBtn'),toggleAuthModeBtn=document.getElementById('authToggleBtn'),loginScreen=document.getElementById('authScreen'),mainApp=document.getElementById('mainAppWrapper'),authMsgBox=document.getElementById('authError'),authErrorText=document.getElementById('authErrorText'),authTitle=document.getElementById('authTitle'),authSub=document.getElementById('authSub'),authIcon=document.getElementById('authIcon'),loginMenu=document.getElementById('authMenu');
+window.cloudUser=null;
+
+// ==========================================
+// 🚨 ADMIN EMAIL SETTING 🚨
+// ==========================================
+const ADMIN_EMAILS = ["loochinsiang5735@gmail.com", "admin1234@gmail.com"];
+
+window.saveAdminData = async () => {
+  const btn = document.getElementById('adminSaveBtn');
+  btn.innerText = "Saving to Database...";
+  try {
+    const newSettings = {
+       theme: document.getElementById('adminThemeDropdown').getAttribute('data-value'),
+       maintenance: document.getElementById('adminMaintDropdown').getAttribute('data-value'),
+       disableGlass: document.getElementById('adminGlassDropdown').getAttribute('data-value'),
+       hideTheme: document.getElementById('adminHideThemeDropdown').getAttribute('data-value'),
+       hideStats: document.getElementById('adminHideStatsDropdown').getAttribute('data-value'),
+       goofyFont: document.getElementById('adminGoofyFontDropdown').getAttribute('data-value'),
+       faqData: {
+           q1: document.getElementById('adminFaqQ1').value.trim(),
+           a1: document.getElementById('adminFaqA1').value.trim()
+       },
+       aboutData: {
+           title: document.getElementById('adminAboutTitle').value.trim(),
+           version: document.getElementById('adminAboutVersion').value.trim(),
+           desc: document.getElementById('adminAboutDesc').value.trim(),
+           footer: document.getElementById('adminAboutFooter').value.trim()
+       },
+       updateScreen: {
+           enabled: document.getElementById('adminUpdateScreenDropdown').getAttribute('data-value'),
+           timestamp: Date.now(),
+           iconAdded: document.getElementById('adminIcon1Dropdown').getAttribute('data-value'),
+           iconRemoved: document.getElementById('adminIcon2Dropdown').getAttribute('data-value'),
+           changelogAdded: document.getElementById('adminUpdateAdded').value.trim(),
+           changelogRemoved: document.getElementById('adminUpdateRemoved').value.trim()
+       }
+    };
+    
+    await setDoc(doc(db, "appData", "schoolInfo"), {
+      students: window.adminTempStudents,
+      teachers: window.adminTempTeachers,
+      classNotices: window.adminTempNotices,
+      settings: newSettings
+    });
+    
+    // Local override so admin doesn't see update prompt
+    window.smkData = window.adminTempStudents;
+    window.teacherData = window.adminTempTeachers;
+    window.classNotices = window.adminTempNotices;
+    window.globalSettings = newSettings;
+    
+    if(window.initFilterChips) window.initFilterChips();
+    if(window.renderTabs) window.renderTabs();
+    if(window.filterData) window.filterData();
+    if(window.applyGlobalSettings) window.applyGlobalSettings();
+    
+    btn.innerText = "Saved Successfully!";
+    setTimeout(() => { btn.innerText = "Save Database"; window.closeAdminPanel(); }, 1500);
+  } catch(e) {
+    alert("Database Save Error!\n\n" + e.message);
+    btn.innerText = "Save Database";
+  }
+};
+
+window.toggleAuthMenu=(e)=>{e.stopPropagation();loginMenu.classList.toggle('show')};document.addEventListener('click',()=>loginMenu.classList.remove('show'));
+function showAuthMessage(msg,isError=!0){authErrorText.innerText=msg;authMsgBox.className=isError?'auth-error show':'auth-error show success';authMsgBox.querySelector('span').innerText=isError?'error_outline':'check_circle';authMsgBox.style.color=isError?'#FF3B30':'#34C759'}
+function getFriendlyError(code){if(code.includes('invalid-email'))return 'Invalid email format.';if(code.includes('wrong-password')||code.includes('invalid-credential'))return 'Incorrect email or password.';if(code.includes('email-already-in-use'))return 'Email already registered.';if(code.includes('weak-password'))return 'Password too short (min 6).';return 'Authentication failed. Try again.'}
+
+toggleAuthModeBtn.addEventListener('click',()=>{
+    window.isSignUpMode = !window.isSignUpMode;
+    authMsgBox.classList.remove('show');
+    authTitle.innerText = window.isSignUpMode ? uiText[curLang].authTitleS : uiText[curLang].authTitleL;
+    authSub.innerText = window.isSignUpMode ? uiText[curLang].authSubS : uiText[curLang].authSubL;
+    authIcon.innerText = window.isSignUpMode ? "person_add" : "lock_outline";
+    primaryAuthBtn.innerText = window.isSignUpMode ? uiText[curLang].authSignUpBtn : uiText[curLang].authLoginBtn;
+    primaryAuthBtn.style.background = window.isSignUpMode ? "#34C759" : "var(--ios-blue)";
+    toggleAuthModeBtn.innerText = window.isSignUpMode ? uiText[curLang].authToggleS : uiText[curLang].authToggleL;
+});
+primaryAuthBtn.addEventListener('click',()=>{const email=emailInput.value.trim(),password=passwordInput.value.trim();if(!email||!password){showAuthMessage("Fill in all fields.");return}primaryAuthBtn.innerText="Processing...";if(window.isSignUpMode){createUserWithEmailAndPassword(auth,email,password).then(()=>{primaryAuthBtn.innerText="Success!"}).catch(err=>{showAuthMessage(getFriendlyError(err.code));primaryAuthBtn.innerText=uiText[curLang].authSignUpBtn})}else{signInWithEmailAndPassword(auth,email,password).then(()=>{primaryAuthBtn.innerText="Success!"}).catch(err=>{showAuthMessage(getFriendlyError(err.code));primaryAuthBtn.innerText=uiText[curLang].authLoginBtn})}});
+
+window.cloudSyncUserData=async function(){if(!window.cloudUser)return;try{await setDoc(doc(db,"users",window.cloudUser.uid),{favorites:window.favorites||[],searchHistory:window.searchHistory||[]},{merge:!0})}catch(e){}};
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    window.cloudUser = user;
+
+    if (ADMIN_EMAILS.includes(user.email)) {
+      document.getElementById('adminControlBtn').style.display = 'flex';
+    } else {
+      document.getElementById('adminControlBtn').style.display = 'none';
+    }
+
+    try {
+      const docSnap = await getDoc(doc(db, "users", user.uid));
+      if (docSnap.exists()) {
+        window.favorites = docSnap.data().favorites ||[];
+        window.searchHistory = docSnap.data().searchHistory ||[];
+      }
+
+      window.unsubscribeSchoolInfo = onSnapshot(doc(db, "appData", "schoolInfo"), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const newSettings = data.settings || { theme: 'dynamic', maintenance: 'false', disableGlass: 'false', hideTheme: 'false', hideStats: 'false', goofyFont: 'false', faqData: {}, aboutData: {}, updateScreen: { enabled: 'false', timestamp: Date.now(), iconAdded: 'new_releases', iconRemoved: 'build_circle', changelogAdded: '', changelogRemoved: '' } };
+          const newStudents = data.students ||[];
+          const newTeachers = data.teachers || {};
+          const newNotices = data.classNotices || {};
+
+          if (window.isInitialLoad) {
+            window.smkData = newStudents;
+            window.teacherData = newTeachers;
+            window.globalSettings = newSettings;
+            window.classNotices = newNotices;
+            
+            window.isInitialLoad = false;
+
+            if (window.globalSettings.maintenance === 'true' && !ADMIN_EMAILS.includes(window.cloudUser.email)) {
+                document.getElementById('mainAppWrapper').classList.remove('visible');
+                document.getElementById('maintenanceScreen').classList.add('visible');
+                loginScreen.classList.remove('active');
+                return;
+            }
+            
+            if(window.applyGlobalSettings) window.applyGlobalSettings();
+            if(window.initFilterChips) window.initFilterChips();
+            if(window.renderTabs) window.renderTabs();
+            if(window.filterData) window.filterData();
+            
+            loginScreen.classList.remove('active');
+
+            // STARTUP UPDATE SCREEN LOGIC
+            const uSettings = window.globalSettings.updateScreen || {};
+            const combinedLog = (uSettings.changelogAdded || '') + (uSettings.changelogRemoved || '') + (uSettings.changelog || '');
+            if (uSettings.enabled === 'true' && localStorage.getItem('lastSeenChangelog2') !== combinedLog) {
+                window.showUpdateScreen();
+            } else {
+                document.getElementById('mainAppWrapper').classList.add('visible');
+            }
+
+            if (window.renderSearchHistory) window.renderSearchHistory();
+          } 
+          else {
+            if (newSettings.maintenance === 'true' && !ADMIN_EMAILS.includes(window.cloudUser.email)) {
+                window.closeModal(); window.closeStats(); window.closeAbout(); window.closeFaq(); window.closeMainMenu(); window.closeAdminPanel(); window.closeFeedback();
+                document.getElementById('mainAppWrapper').classList.remove('visible');
+                document.getElementById('maintenanceScreen').classList.add('visible');
+                return;
+            } else if (newSettings.maintenance === 'false' && document.getElementById('maintenanceScreen').classList.contains('visible')) {
+                document.getElementById('maintenanceScreen').classList.remove('visible');
+                document.getElementById('mainAppWrapper').classList.add('visible');
+            }
+
+            if (JSON.stringify(window.globalSettings) !== JSON.stringify(newSettings)) {
+              window.globalSettings = newSettings;
+              if(window.applyGlobalSettings) window.applyGlobalSettings();
+            }
+
+            const dataChanged = JSON.stringify(window.smkData) !== JSON.stringify(newStudents) ||
+                                JSON.stringify(window.teacherData) !== JSON.stringify(newTeachers) ||
+                                JSON.stringify(window.classNotices) !== JSON.stringify(newNotices);
+
+            if (dataChanged) {
+              window.pendingDataUpdate = { students: newStudents, teachers: newTeachers, notices: newNotices };
+              document.getElementById('updatePromptBanner').classList.add('show');
+            }
+          }
+        }
+      });
+
+    } catch (e) {
+      console.error("Data error: ", e);
+    }
+    
+  } else {
+    if (window.unsubscribeSchoolInfo) window.unsubscribeSchoolInfo(); // Stop listening
+    
+    // Clear state completely on logout to fix "Success!" sticking bug
+    window.isInitialLoad = true;
+    window.cloudUser = null;
+    window.favorites = [];
+    window.searchHistory =[];
+    window.smkData =[];
+    window.teacherData = {};
+    window.classNotices = {};
+    
+    mainApp.classList.remove('visible');
+    loginScreen.classList.add('active');
+    emailInput.value = ''; 
+    passwordInput.value = '';
+    primaryAuthBtn.innerText = window.isSignUpMode ? uiText[curLang].authSignUpBtn : uiText[curLang].authLoginBtn;
+    
+    if (window.filterData) window.filterData();
+  }
+});
 </script>
 </body>
 </html>
